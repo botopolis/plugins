@@ -6,6 +6,50 @@ import (
 	"time"
 )
 
+type Event string
+
+const (
+	BuildScheduled Event = "build.scheduled"
+	BuildRunning   Event = "build.running"
+	BuildFinished  Event = "build.finished"
+)
+
+type State string
+
+const (
+	Running   State = "running"
+	Scheduled State = "scheduled"
+	Passed    State = "passed"
+	Failed    State = "failed"
+	Blocked   State = "blocked"
+	Canceled  State = "canceled"
+	Canceling State = "canceling"
+	Skipped   State = "skipped"
+	NotRun    State = "not_run"
+	Finished  State = "finished"
+)
+
+// Job corresponds to the buildkite resource:
+// https://buildkite.com/docs/rest-api/jobs
+type Job struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Command string `json:"command"`
+
+	WebURL    string `json:"web_url"`
+	LogURL    string `json:"log_url"`
+	RawLogURL string `json:"raw_log_url"`
+
+	State      State `json:"state"`
+	ExitStatus int64 `json:"exit_status"`
+
+	CreatedAt   time.Time `json:"created_at,string"`
+	ScheduledAt time.Time `json:"scheduled_at,string"`
+	StartedAt   time.Time `json:"started_at,string"`
+	FinishedAt  time.Time `json:"finished_at,string"`
+}
+
 // Build corresponds to the buildkite resource:
 // https://buildkite.com/docs/rest-api/builds
 type Build struct {
@@ -25,9 +69,12 @@ type Build struct {
 		Name      string `json:"name"`
 	} `json:"creator"`
 
+	Jobs []Job `json:"jobs"`
+
 	Env      map[string]string `json:"env"`
 	MetaData map[string]string `json:"meta_data"`
 
+	State    State    `json:"state"`
 	Blocked  bool     `json:"blocked"`
 	Number   int64    `json:"number"`
 	Pipeline Pipeline `json:"pipeline"`
@@ -72,16 +119,9 @@ type Pipeline struct {
 	CreatedAt time.Time `json:"created_at,string"`
 }
 
-const (
-	// Possible events
-	BuildScheduled = "build.scheduled"
-	BuildRunning   = "build.running"
-	BuildFinished  = "build.finished"
-)
-
 // BuildEvent is the payload received from Buildkite for build events
 type BuildEvent struct {
-	Event    string   `json:"event"`
+	Event    Event    `json:"event"`
 	Build    Build    `json:"build"`
 	Pipeline Pipeline `json:"pipeline"`
 	Sender   struct {
